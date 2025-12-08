@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Texture to GLB Converter</title>
+    <title>Texture to GLB Converter - Advanced</title>
     <style>
         * {
             margin: 0;
@@ -26,7 +26,7 @@
             border-radius: 20px;
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
+            max-width: 700px;
             width: 100%;
         }
 
@@ -38,20 +38,88 @@
 
         .subtitle {
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             font-size: 14px;
         }
 
+        /* Toggle Switch */
+        .options-bar {
+            background: #f0f2ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background-color: #ccc;
+            border-radius: 20px;
+            margin-right: 10px;
+            transition: .4s;
+        }
+
+        .toggle-switch::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+
+        input:checked + .toggle-switch {
+            background-color: #764ba2;
+        }
+
+        input:checked + .toggle-switch::before {
+            transform: translateX(24px);
+        }
+
+        .toggle-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        /* Upload Grid */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-grid.two-columns {
+            grid-template-columns: 1fr 1fr;
+        }
 
         .drop-zone {
             border: 3px dashed #868686;
             border-radius: 15px;
-            padding: 60px 20px;
+            padding: 30px 10px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
             background: #f8f9ff;
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .drop-zone:hover {
@@ -59,55 +127,50 @@
             background: #f0f2ff;
         }
 
-        .drop-zone.dragover {
+        .drop-zone.active {
             border-color: #764ba2;
             background: #e8ebff;
-            transform: scale(1.02);
+        }
+
+        .drop-zone.filled {
+            border-style: solid;
+            padding: 10px;
         }
 
         .drop-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
+            font-size: 32px;
+            margin-bottom: 10px;
         }
 
         .drop-text {
             color: #667eea;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
-        .drop-hint {
-            color: #999;
-            font-size: 14px;
+        .drop-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(118, 75, 162, 0.1);
+            color: #764ba2;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
         }
 
-        #fileInput {
-            display: none;
-        }
-
-        .preview-section {
-            margin-top: 30px;
-            display: none;
-        }
-
-        .preview-container {
-            background: #f8f9ff;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .preview-image {
+        .preview-thumb {
             max-width: 100%;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-height: 160px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        .file-info {
-            margin-top: 15px;
-            color: #666;
-            font-size: 14px;
+        /* Action Section */
+        .action-section {
+            margin-top: 30px;
         }
 
         .btn {
@@ -121,7 +184,6 @@
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             width: 100%;
-            margin-top: 10px;
         }
 
         .btn:hover {
@@ -129,14 +191,11 @@
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn:disabled {
             background: #ccc;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .status {
@@ -148,300 +207,499 @@
             display: none;
         }
 
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        #back-zone {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Texture to GLB</h1>
-        <p class="subtitle">Convertir une texture (.jpg, .png) en modèles 3D afin d'éviter le bug d'animation dans Zapworks Designer</p>
+        <p class="subtitle">Convertir une texture (.jpg, .png) en modèles 3D : evite le bug d'animation d'image de Zapworks Designer et permet une image à double face.
+
+</p>
         
-        <div class="drop-zone" id="dropZone">
-            <div class="drop-icon">↓</div>
-            <div class="drop-text">Glissez une image ici</div>
-            <div class="drop-hint">ou cliquez pour sélectionner</div>
+        <div class="options-bar">
+            <label class="toggle-container">
+                <input type="checkbox" id="doubleFaceCheck" style="display:none">
+                <div class="toggle-switch"></div>
+                <span class="toggle-label">Double face (Recto/Verso différents)</span>
+            </label>
         </div>
-        
-        <input type="file" id="fileInput" accept="image/jpeg,image/png">
-        
-        <div class="preview-section" id="previewSection">
-            <div class="preview-container">
-                <img id="previewImage" class="preview-image" alt="Preview">
-                <div class="file-info" id="fileInfo"></div>
+
+        <div class="upload-grid" id="uploadGrid">
+            <div class="drop-zone" id="frontZone">
+                <span class="drop-label">FACE AVANT</span>
+                <div class="content-empty">
+                    <div class="drop-icon">↓</div>
+                    <div class="drop-text">Image Recto</div>
+                </div>
+                <img id="frontPreview" class="preview-thumb" style="display:none">
             </div>
-            <button class="btn" id="convertBtn">Convertir en GLB</button>
+
+            <div class="drop-zone" id="backZone" style="display:none">
+                <span class="drop-label">FACE ARRIÈRE</span>
+                <div class="content-empty">
+                    <div class="drop-icon">↓</div>
+                    <div class="drop-text">Image Verso</div>
+                </div>
+                <img id="backPreview" class="preview-thumb" style="display:none">
+            </div>
+        </div>
+
+        <input type="file" id="frontInput" accept="image/jpeg,image/png" hidden>
+        <input type="file" id="backInput" accept="image/jpeg,image/png" hidden>
+
+        <div class="action-section">
+            <button class="btn" id="convertBtn" disabled>Convertir en GLB</button>
             <div class="status" id="status"></div>
         </div>
     </div>
 
     <script>
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const previewSection = document.getElementById('previewSection');
-        const previewImage = document.getElementById('previewImage');
-        const fileInfo = document.getElementById('fileInfo');
+        // --- State Management ---
+        const state = {
+            isDoubleFace: false,
+            frontFile: null,
+            backFile: null
+        };
+
+        // --- DOM Elements ---
+        const doubleFaceCheck = document.getElementById('doubleFaceCheck');
+        const uploadGrid = document.getElementById('uploadGrid');
+        
+        const frontZone = document.getElementById('frontZone');
+        const backZone = document.getElementById('backZone');
+        
+        const frontInput = document.getElementById('frontInput');
+        const backInput = document.getElementById('backInput');
+        
+        const frontPreview = document.getElementById('frontPreview');
+        const backPreview = document.getElementById('backPreview');
+        
         const convertBtn = document.getElementById('convertBtn');
         const status = document.getElementById('status');
 
-        let currentFile = null;
+        // --- Event Listeners ---
 
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
+        // Toggle Switch
+        doubleFaceCheck.addEventListener('change', (e) => {
+            state.isDoubleFace = e.target.checked;
+            if (state.isDoubleFace) {
+                uploadGrid.classList.add('two-columns');
+                backZone.style.display = 'flex';
+            } else {
+                uploadGrid.classList.remove('two-columns');
+                backZone.style.display = 'none';
             }
+            updateButtonState();
         });
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFile(e.target.files[0]);
-            }
-        });
+        // Setup Drop Zones
+        setupDropZone(frontZone, frontInput, 'front');
+        setupDropZone(backZone, backInput, 'back');
 
-        function handleFile(file) {
+        function setupDropZone(zone, input, type) {
+            zone.addEventListener('click', () => input.click());
+            
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('active');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('active');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('active');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0], type);
+            });
+
+            input.addEventListener('change', (e) => {
+                if (e.target.files.length) handleFile(e.target.files[0], type);
+            });
+        }
+
+        function handleFile(file, type) {
             if (!file.type.match('image/(jpeg|png)')) {
-                showStatus('Veuillez sélectionner une image JPG ou PNG', 'error');
+                showStatus('Format non supporté. Utilisez JPG ou PNG.', 'error');
                 return;
             }
 
-            currentFile = file;
             const reader = new FileReader();
-            
             reader.onload = (e) => {
-                previewImage.src = e.target.result;
-                fileInfo.textContent = `${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-                previewSection.style.display = 'block';
+                if (type === 'front') {
+                    state.frontFile = file;
+                    frontPreview.src = e.target.result;
+                    frontPreview.style.display = 'block';
+                    frontZone.querySelector('.content-empty').style.display = 'none';
+                    frontZone.classList.add('filled');
+                } else {
+                    state.backFile = file;
+                    backPreview.src = e.target.result;
+                    backPreview.style.display = 'block';
+                    backZone.querySelector('.content-empty').style.display = 'none';
+                    backZone.classList.add('filled');
+                }
+                updateButtonState();
                 status.style.display = 'none';
             };
-            
             reader.readAsDataURL(file);
         }
 
-        convertBtn.addEventListener('click', async () => {
-            if (!currentFile) return;
+        function updateButtonState() {
+            if (state.isDoubleFace) {
+                convertBtn.disabled = !(state.frontFile && state.backFile);
+            } else {
+                convertBtn.disabled = !state.frontFile;
+            }
+        }
 
+        // --- Conversion Logic ---
+
+        convertBtn.addEventListener('click', async () => {
             convertBtn.disabled = true;
-            convertBtn.textContent = 'Conversion en cours...';
+            convertBtn.textContent = 'Génération...';
             status.style.display = 'none';
 
             try {
-                const glbBlob = await convertImageToGLB(currentFile);
-                downloadGLB(glbBlob, currentFile.name);
+                // Read files as Data URLs
+                const frontData = await readFileAsDataURL(state.frontFile);
+                let backData = null;
+                
+                if (state.isDoubleFace) {
+                    backData = await readFileAsDataURL(state.backFile);
+                } else {
+                    // In single mode, we conceptually use the front image for the back
+                    // But our logic handles null backData by duplicating front logic
+                    backData = frontData; 
+                }
+
+                // Create GLB
+                const glbBlob = await generateCompositeGLB(frontData, backData, state.isDoubleFace);
+                
+                // Download
+                const fileName = state.frontFile.name.replace(/\.[^/.]+$/, '') + (state.isDoubleFace ? '_double' : '') + '.glb';
+                downloadGLB(glbBlob, fileName);
+                
                 showStatus('✓ GLB généré avec succès !', 'success');
-            } catch (error) {
-                showStatus('Erreur lors de la conversion: ' + error.message, 'error');
+            } catch (err) {
+                console.error(err);
+                showStatus('Erreur: ' + err.message, 'error');
             } finally {
                 convertBtn.disabled = false;
                 convertBtn.textContent = 'Convertir en GLB';
             }
         });
 
-        async function convertImageToGLB(imageFile) {
+        function readFileAsDataURL(file) {
             return new Promise((resolve, reject) => {
-                const img = new Image();
                 const reader = new FileReader();
-
-                reader.onload = (e) => {
-                    img.onload = () => {
-                        try {
-                            const aspectRatio = img.width / img.height;
-                            const glb = createCubeGLB(e.target.result, aspectRatio);
-                            resolve(glb);
-                        } catch (error) {
-                            reject(error);
-                        }
-                    };
-                    img.onerror = () => reject(new Error('Impossible de charger l\'image'));
-                    img.src = e.target.result;
-                };
-
-                reader.onerror = () => reject(new Error('Impossible de lire le fichier'));
-                reader.readAsDataURL(imageFile);
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
             });
         }
 
-        function createCubeGLB(imageDataURL, aspectRatio) {
-            // Create an extremely flat cube that acts like a quad but with depth
+        async function generateCompositeGLB(frontDataUrl, backDataUrl, isDifferent) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const aspectRatio = img.width / img.height;
+                    try {
+                        // We construct the binary data
+                        const glb = createAdvancedCubeGLB(frontDataUrl, backDataUrl, aspectRatio, isDifferent);
+                        resolve(glb);
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                img.onerror = () => reject(new Error('Impossible de charger l\'image principale'));
+                img.src = frontDataUrl;
+            });
+        }
+
+        function createAdvancedCubeGLB(frontImgData, backImgData, aspectRatio, isTwoTextures) {
+            // Dimensions
             const width = aspectRatio;
             const height = 1;
-            const depth = 0.001; // Extremely thin depth
+            const depth = 0.001; 
 
-            // 24 vertices (4 per face, 6 faces)
+            // --- Geometry Data ---
+            // 24 vertices total
             const vertices = new Float32Array([
-                // Front face (main visible face with correct aspect ratio)
+                // Front (Z+)
                 -width/2, -height/2,  depth/2,
                  width/2, -height/2,  depth/2,
                  width/2,  height/2,  depth/2,
                 -width/2,  height/2,  depth/2,
-                // Back face
+                // Back (Z-)
                 -width/2, -height/2, -depth/2,
                 -width/2,  height/2, -depth/2,
                  width/2,  height/2, -depth/2,
                  width/2, -height/2, -depth/2,
-                // Top face
+                // Top
                 -width/2,  height/2, -depth/2,
                 -width/2,  height/2,  depth/2,
                  width/2,  height/2,  depth/2,
                  width/2,  height/2, -depth/2,
-                // Bottom face
+                // Bottom
                 -width/2, -height/2, -depth/2,
                  width/2, -height/2, -depth/2,
                  width/2, -height/2,  depth/2,
                 -width/2, -height/2,  depth/2,
-                // Right face
+                // Right
                  width/2, -height/2, -depth/2,
                  width/2,  height/2, -depth/2,
                  width/2,  height/2,  depth/2,
                  width/2, -height/2,  depth/2,
-                // Left face
+                // Left
                 -width/2, -height/2, -depth/2,
                 -width/2, -height/2,  depth/2,
                 -width/2,  height/2,  depth/2,
                 -width/2,  height/2, -depth/2
             ]);
 
-            // UVs (same texture on all faces)
             const uvs = new Float32Array([
                 // Front
                 0, 1, 1, 1, 1, 0, 0, 0,
-                // Back
+                // Back (Mirrored horizontally for correct reading if looked from behind)
                 1, 1, 1, 0, 0, 0, 0, 1,
-                // Top
-                0, 1, 0, 0, 1, 0, 1, 1,
-                // Bottom
-                1, 1, 0, 1, 0, 0, 1, 0,
-                // Right
-                1, 1, 1, 0, 0, 0, 0, 1,
-                // Left
-                0, 1, 1, 1, 1, 0, 0, 0
+                // Top/Bot/Sides (Not really important as they are transparent)
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0
             ]);
 
-            // Indices for 6 faces (2 triangles each)
-            const indices = new Uint16Array([
-                0, 1, 2,   0, 2, 3,    // front
-                4, 5, 6,   4, 6, 7,    // back
-                8, 9, 10,  8, 10, 11,  // top
-                12, 13, 14, 12, 14, 15, // bottom
-                16, 17, 18, 16, 18, 19, // right
-                20, 21, 22, 20, 22, 23  // left
+            // Indices split by material groups
+            // Group 1: Front Face
+            const indicesFront = new Uint16Array([0, 1, 2, 0, 2, 3]);
+            
+            // Group 2: Back Face
+            const indicesBack = new Uint16Array([4, 5, 6, 4, 6, 7]);
+            
+            // Group 3: Sides (Top, Bot, Left, Right) - All Transparent
+            const indicesSides = new Uint16Array([
+                8, 9, 10,  8, 10, 11,   // Top
+                12, 13, 14, 12, 14, 15, // Bottom
+                16, 17, 18, 16, 18, 19, // Right
+                20, 21, 22, 20, 22, 23  // Left
             ]);
 
-            const base64Data = imageDataURL.split(',')[1];
-            const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            // --- Image Buffers ---
+            const getBufferFromData = (dataUrl) => {
+                const b64 = dataUrl.split(',')[1];
+                return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+            };
+
+            const frontBuffer = getBufferFromData(frontImgData);
+            let backBuffer = frontBuffer;
+            let useSecondImage = false;
+
+            if (isTwoTextures && backImgData) {
+                backBuffer = getBufferFromData(backImgData);
+                useSecondImage = true;
+            }
+
+            // --- Constructing GLTF JSON ---
+            
+            // Textures & Images
+            // If single mode: 1 Image, 1 Texture
+            // If double mode: 2 Images, 2 Textures
+            const imagesDef = [{ bufferView: -1, mimeType: getMime(frontImgData) }];
+            const texturesDef = [{ source: 0 }];
+            
+            if (useSecondImage) {
+                imagesDef.push({ bufferView: -1, mimeType: getMime(backImgData) });
+                texturesDef.push({ source: 1 });
+            }
+
+            // Materials
+            // Mat 0: Front (Tex 0)
+            // Mat 1: Back (Tex 0 OR Tex 1)
+            // Mat 2: Transparent
+            const materialsDef = [
+                {
+                    name: "FrontMaterial",
+                    pbrMetallicRoughness: {
+                        baseColorTexture: { index: 0 },
+                        metallicFactor: 0, roughnessFactor: 1
+                    },
+                    alphaMode: "BLEND"
+                },
+                {
+                    name: "BackMaterial",
+                    pbrMetallicRoughness: {
+                        baseColorTexture: { index: useSecondImage ? 1 : 0 },
+                        metallicFactor: 0, roughnessFactor: 1
+                    },
+                    alphaMode: "BLEND"
+                },
+                {
+                    name: "InvisibleMaterial",
+                    pbrMetallicRoughness: {
+                        baseColorFactor: [0, 0, 0, 0], // Fully transparent
+                        metallicFactor: 0, roughnessFactor: 1
+                    },
+                    alphaMode: "BLEND"
+                }
+            ];
+
+            // Accessors needed: 
+            // 0: Position (Vec3)
+            // 1: UV (Vec2)
+            // 2: Indices Front
+            // 3: Indices Back
+            // 4: Indices Sides
+            
+            // Buffer Views Mapping (calculated later):
+            // 0: Vertices
+            // 1: UVs
+            // 2: Indices Front
+            // 3: Indices Back
+            // 4: Indices Sides
+            // 5: Image 1
+            // 6: Image 2 (Optional)
 
             const json = {
-                asset: { version: "2.0", generator: "Image to GLB Converter" },
+                asset: { version: "2.0", generator: "Advanced Texture GLB" },
                 scene: 0,
                 scenes: [{ nodes: [0] }],
                 nodes: [{ mesh: 0 }],
                 meshes: [{
-                    primitives: [{
-                        attributes: { POSITION: 0, TEXCOORD_0: 1 },
-                        indices: 2,
-                        material: 0
-                    }]
+                    primitives: [
+                        { attributes: { POSITION: 0, TEXCOORD_0: 1 }, indices: 2, material: 0 }, // Front
+                        { attributes: { POSITION: 0, TEXCOORD_0: 1 }, indices: 3, material: 1 }, // Back
+                        { attributes: { POSITION: 0, TEXCOORD_0: 1 }, indices: 4, material: 2 }  // Sides
+                    ]
                 }],
-                materials: [{
-                    pbrMetallicRoughness: {
-                        baseColorTexture: { index: 0 },
-                        metallicFactor: 0,
-                        roughnessFactor: 1
-                    },
-                    alphaMode: "BLEND"
-                }],
-                textures: [{ source: 0 }],
-                images: [{ bufferView: 3, mimeType: imageDataURL.startsWith('data:image/png') ? "image/png" : "image/jpeg" }],
+                materials: materialsDef,
+                textures: texturesDef,
+                images: imagesDef,
                 accessors: [
-                    { bufferView: 0, componentType: 5126, count: 24, type: "VEC3", max: [width/2, height/2, depth/2], min: [-width/2, -height/2, -depth/2] },
-                    { bufferView: 1, componentType: 5126, count: 24, type: "VEC2" },
-                    { bufferView: 2, componentType: 5123, count: 36, type: "SCALAR" }
+                    { bufferView: 0, componentType: 5126, count: 24, type: "VEC3", min: [-width/2, -height/2, -depth/2], max: [width/2, height/2, depth/2] }, // Pos
+                    { bufferView: 1, componentType: 5126, count: 24, type: "VEC2" }, // UV
+                    { bufferView: 2, componentType: 5123, count: 6, type: "SCALAR" }, // Idx Front
+                    { bufferView: 3, componentType: 5123, count: 6, type: "SCALAR" }, // Idx Back
+                    { bufferView: 4, componentType: 5123, count: 24, type: "SCALAR" }  // Idx Sides
                 ],
-                bufferViews: [
-                    { buffer: 0, byteOffset: 0, byteLength: vertices.byteLength },
-                    { buffer: 0, byteOffset: vertices.byteLength, byteLength: uvs.byteLength },
-                    { buffer: 0, byteOffset: vertices.byteLength + uvs.byteLength, byteLength: indices.byteLength },
-                    { buffer: 0, byteOffset: vertices.byteLength + uvs.byteLength + indices.byteLength, byteLength: imageBuffer.byteLength }
-                ],
-                buffers: [{ byteLength: vertices.byteLength + uvs.byteLength + indices.byteLength + imageBuffer.byteLength }]
+                bufferViews: [], // Filled dynamically
+                buffers: [] // Filled dynamically
             };
 
-            return buildGLB(json, [vertices, uvs, indices, imageBuffer]);
+            // Calculate Offsets
+            const bufferViews = [];
+            let currentOffset = 0;
+            const bufferChunks = [vertices, uvs, indicesFront, indicesBack, indicesSides];
+            
+            // Geometry Views
+            bufferChunks.forEach((chunk, i) => {
+                const len = chunk.byteLength;
+                bufferViews.push({ buffer: 0, byteOffset: currentOffset, byteLength: len });
+                currentOffset += len;
+                // Add padding to 4 bytes
+                while(currentOffset % 4 !== 0) { currentOffset++; }
+            });
+
+            // Image 1 View
+            const img1Index = bufferViews.length;
+            json.images[0].bufferView = img1Index;
+            bufferViews.push({ buffer: 0, byteOffset: currentOffset, byteLength: frontBuffer.byteLength });
+            currentOffset += frontBuffer.byteLength;
+            while(currentOffset % 4 !== 0) { currentOffset++; }
+
+            // Image 2 View (if exists)
+            if (useSecondImage) {
+                const img2Index = bufferViews.length;
+                json.images[1].bufferView = img2Index;
+                bufferViews.push({ buffer: 0, byteOffset: currentOffset, byteLength: backBuffer.byteLength });
+                currentOffset += backBuffer.byteLength;
+                while(currentOffset % 4 !== 0) { currentOffset++; }
+            }
+
+            json.bufferViews = bufferViews;
+            json.buffers = [{ byteLength: currentOffset }];
+
+            // Build Binary
+            const finalBuffer = new Uint8Array(currentOffset);
+            let writePos = 0;
+
+            // Write Geometry
+            bufferChunks.forEach(chunk => {
+                const view = chunk instanceof Float32Array || chunk instanceof Uint16Array 
+                    ? new Uint8Array(chunk.buffer) : chunk;
+                finalBuffer.set(view, writePos);
+                writePos += view.byteLength;
+                while(writePos % 4 !== 0) { finalBuffer[writePos] = 0; writePos++; } // Padding
+            });
+
+            // Write Image 1
+            finalBuffer.set(frontBuffer, writePos);
+            writePos += frontBuffer.byteLength;
+            while(writePos % 4 !== 0) { finalBuffer[writePos] = 0; writePos++; }
+
+            // Write Image 2
+            if (useSecondImage) {
+                finalBuffer.set(backBuffer, writePos);
+                writePos += backBuffer.byteLength;
+                while(writePos % 4 !== 0) { finalBuffer[writePos] = 0; writePos++; }
+            }
+
+            return buildGLB(json, finalBuffer);
         }
 
-        function buildGLB(json, dataArrays) {
+        function getMime(dataUrl) {
+            return dataUrl.startsWith('data:image/png') ? "image/png" : "image/jpeg";
+        }
+
+        function buildGLB(json, binaryBuffer) {
             const jsonString = JSON.stringify(json);
             const jsonBuffer = new TextEncoder().encode(jsonString);
+            
+            // Padding JSON to 4 bytes with spaces (0x20)
             const jsonPadding = (4 - (jsonBuffer.length % 4)) % 4;
             const jsonChunkLength = jsonBuffer.length + jsonPadding;
 
-            let totalBinaryLength = 0;
-            dataArrays.forEach(arr => totalBinaryLength += arr.byteLength);
-            
-            const binaryData = new Uint8Array(totalBinaryLength);
-            let offset = 0;
-            dataArrays.forEach(arr => {
-                binaryData.set(arr instanceof Float32Array || arr instanceof Uint16Array ? new Uint8Array(arr.buffer) : arr, offset);
-                offset += arr.byteLength;
-            });
+            // Padding Binary to 4 bytes with zeros (already handled in creation, but good for header calc)
+            // binaryBuffer is already padded in my logic above to 4 byte alignment
+            const binChunkLength = binaryBuffer.length; 
 
-            const binaryPadding = (4 - (binaryData.length % 4)) % 4;
-            const binaryChunkLength = binaryData.length + binaryPadding;
-
-            const totalLength = 12 + 8 + jsonChunkLength + 8 + binaryChunkLength;
+            const totalLength = 12 + 8 + jsonChunkLength + 8 + binChunkLength;
 
             const glb = new ArrayBuffer(totalLength);
             const view = new DataView(glb);
             let pos = 0;
 
-            view.setUint32(pos, 0x46546C67, true); pos += 4;
-            view.setUint32(pos, 2, true); pos += 4;
-            view.setUint32(pos, totalLength, true); pos += 4;
+            // Header
+            view.setUint32(pos, 0x46546C67, true); pos += 4; // magic
+            view.setUint32(pos, 2, true); pos += 4; // version
+            view.setUint32(pos, totalLength, true); pos += 4; // total length
 
+            // JSON Chunk
             view.setUint32(pos, jsonChunkLength, true); pos += 4;
-            view.setUint32(pos, 0x4E4F534A, true); pos += 4;
+            view.setUint32(pos, 0x4E4F534A, true); pos += 4; // JSON
             new Uint8Array(glb, pos, jsonBuffer.length).set(jsonBuffer); pos += jsonBuffer.length;
-            for (let i = 0; i < jsonPadding; i++) {
-                view.setUint8(pos++, 0x20);
-            }
+            for (let i = 0; i < jsonPadding; i++) view.setUint8(pos++, 0x20);
 
-            view.setUint32(pos, binaryChunkLength, true); pos += 4;
-            view.setUint32(pos, 0x004E4942, true); pos += 4;
-            new Uint8Array(glb, pos, binaryData.length).set(binaryData); pos += binaryData.length;
-            for (let i = 0; i < binaryPadding; i++) {
-                view.setUint8(pos++, 0);
-            }
+            // Binary Chunk
+            view.setUint32(pos, binChunkLength, true); pos += 4;
+            view.setUint32(pos, 0x004E4942, true); pos += 4; // BIN
+            new Uint8Array(glb, pos, binaryBuffer.length).set(binaryBuffer);
 
             return new Blob([glb], { type: 'model/gltf-binary' });
         }
 
-        function downloadGLB(blob, originalName) {
+        function downloadGLB(blob, fileName) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = originalName.replace(/\.[^/.]+$/, '') + '.glb';
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
